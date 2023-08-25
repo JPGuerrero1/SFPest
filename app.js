@@ -2,10 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
-
+const mongoose = require('mongoose');
+const Service = require("./models/service");
 const app = express();
-
-const serviceGlobal = [];
 
 app.use(bodyParser.json());
 
@@ -43,23 +42,44 @@ app.use('/graphql',
 
         rootValue: {
             services: () => {
-                return serviceGlobal;
+                return Service.find()
+                .then(services => {
+                    return services.map(service => {
+                        return {...service._doc};
+                    });
+                })
+                .catch(err => {
+                    throw err;
+                });
             },
 
             createServices: args => {
-               const service = {
-                _id: Math.random().toString(),
+               const service = new Service({
                 title: args.serviceInput.title,
                 description: args.serviceInput.description,
                 price: +args.serviceInput.price,
-                date: args.serviceInput.date
-               };
-               serviceGlobal.push(service);
-               return service;
+                date: new Date(args.serviceInput.date)
+               });
+               return service
+               .save()
+               .then(result => {
+                console.log(result);
+                return {...result._doc};
+               })
+               .catch(err => {
+                console.log(err);
+                throw err;
+               });
             }
         },
         graphiql: true
     })
 );
 
-app.listen(3000);
+mongoose.connect(`mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD
+}@sfenvironmental.eh1ptyz.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`
+).then(() => {
+    app.listen(3000);
+}).catch(err => {
+    console.log(err);
+});
