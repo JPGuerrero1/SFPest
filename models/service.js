@@ -16,6 +16,10 @@ const serviceSchema = new Schema({
     date: {
         type: Date,
         required: true,
+    },
+    creator: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
     }
 });
 
