@@ -1,6 +1,7 @@
 const Service = require("../../models/service");
 const User = require("../../models/user");
 const bcrypt = require('bcryptjs');
+const Booking = require('../../models/booking');
 
 const services = async serviceIds => {
     try {
@@ -16,6 +17,19 @@ const services = async serviceIds => {
         throw err;
     };
 };
+
+const singleService = async eventId => {
+    try {
+        const event = await Service.findById(eventId);
+        return {
+            ...event._doc,
+            _id: event.id,
+            creator: user.bind(this, event.creator)
+        };
+    } catch (err) {
+        throw err;
+    }
+}
 
 const user = async userId => {
     try {
@@ -46,13 +60,31 @@ module.exports = {
         };
     },
 
+    bookings: async () => {
+        try {
+            const bookings = await Booking.find();
+            return bookings.map(booking => {
+                return {
+                    ...booking._doc,
+                    _id: booking.id,
+                    user: user.bind(this, booking._doc.user),
+                    event: singleService.bind(this, booking._doc.event),
+                    createdAt: new Date(booking._doc.createdAt).toISOString(),
+                    updatedAt: new Date(booking._doc.createdAt).toISOString()
+                };
+            });
+        } catch (err) {
+            throw err;
+        }
+    },
+
     createServices: async args => {
        const service = new Service({
         title: args.serviceInput.title,
         description: args.serviceInput.description,
         price: +args.serviceInput.price,
         date: new Date(args.serviceInput.date),
-        creator: '64ed2a521883294619afa24e'
+        creator: '64ed553fedc07baf2042673c'
        });
 
        let appointment;
@@ -64,7 +96,7 @@ module.exports = {
             date: new Date(service._doc.date).toISOString(),
             creator: user.bind(this, result._doc.creator
         )};
-        const creator = await User.findById('64ed2a521883294619afa24e');
+        const creator = await User.findById('64ed553fedc07baf2042673c');
 
         if (!creator) {
             throw new Error('User not found.');
@@ -100,5 +132,38 @@ module.exports = {
             throw err
         };
         
+    },
+
+    bookEvent: async args => {
+        const fetchedEvent = await Service.findOne({_id: args.eventId})
+        const booking = new Booking({
+            user: '64ed553fedc07baf2042673c',
+            event: fetchedEvent
+        });
+        const result = await booking.save();
+        return {
+            ...result._doc,
+            _id: result.id,
+            user: user.bind(this, booking._doc.user),
+            event: singleService.bind(this, booking._doc.event),
+            createdAt: new Date(result._doc.createdAt).toISOString(),
+            updatedAt: new Date(result._doc.createdAt).toISOString()
+        };
+        
+    },
+    cancelBooking: async args => {
+        try {
+            const booking = await Booking.findById(args.bookingId).populate('event');
+            const event = {
+                ...booking.event._doc,
+                 _id: booking.event.id,
+                  creator: user.bind(this, booking.event._doc.creator)
+            };
+
+            await Booking.deleteOne({_id: args.bookingId});
+            return event;
+        } catch (err) {
+            throw err;
+        }
     }
 };

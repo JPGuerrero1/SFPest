@@ -3,19 +3,19 @@ const Schema = mongoose.Schema;
 const serviceSchema = new Schema({
     title: {
         type: String,
-        required: true,
+        required: true
     },
     description: {
         type: String,
-        require: true,
+        require: true
     },
     price: {
         type: Number,
-        required: true,
+        required: true
     },
     date: {
         type: Date,
-        required: true,
+        required: true
     },
     creator: {
         type: Schema.Types.ObjectId,
