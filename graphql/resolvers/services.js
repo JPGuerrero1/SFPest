@@ -1,4 +1,5 @@
 const Service = require("../../models/service");
+const User = require('../../models/user');
 const {Refactor} = require('./populationFunc');
 
 module.exports = {
@@ -13,13 +14,18 @@ module.exports = {
         };
     },
 
-    createServices: async args => {
+    createServices: async (args,req) => {
+
+        if (!req.isAuth) {
+            throw new Error('Unauthenticated.');
+        }
+
        const service = new Service({
         title: args.serviceInput.title,
         description: args.serviceInput.description,
         price: +args.serviceInput.price,
         date: new Date(args.serviceInput.date),
-        creator: '64ed553fedc07baf2042673c'
+        creator: req.userId
        });
 
        let appointment;
@@ -29,7 +35,7 @@ module.exports = {
 
         appointment = Refactor(result);
 
-        const creator = await User.findById('64ed553fedc07baf2042673c');
+        const creator = await User.findById(req.userId);
 
         if (!creator) {
             throw new Error('User not found.');
